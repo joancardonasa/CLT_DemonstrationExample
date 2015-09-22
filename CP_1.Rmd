@@ -1,0 +1,100 @@
+---
+title: "Statistical Inference Course Project (Part 1)"
+author: "Joan Cardona Sanchez"
+date: "09/2015"
+output: word_document
+---
+
+In this project we will analyze the exponential distribution and its properties. The probability density function of this distribution is given by:
+
+f(x) = lambda ^ (- lambda*x) (for x >= 0)
+
+f(x) = 0 (for x < 0)
+
+The lambda parameter, also called the rate parameter, determines the exact shape that the particular distribution follows. Along with this, it also determines many of the properties of the distribution, such as:
+
+The mean: 1 / lambda
+
+The variance: lambda ^ (- 2)
+
+In our case, all simulations will have lambda = 0.2. 
+
+Before we simulate anything, let us note that given the rate parameter we just established, the population mean and the population variance of the distribution should take the following values:
+
+```{r}
+lambda <- 0.2
+
+# Sample Statistics:
+
+exp_mean <- 1/lambda
+exp_variance <- lambda^(-2)
+
+df <- data.frame(Mean = exp_mean, Variance = exp_variance)
+print(df)
+
+```
+
+This is nice to know, since it will be very helpful when we compare these values to their analogous sample estimators.
+
+Let us start the simulation by defining a vector of 40 values, that follows an exponential distribution of rate = 0.2 and observing its histogram, comparing it to the exponential distribution (in green).
+
+```{r}
+a <- rexp(n = 40, rate = lambda)
+sec <- seq(0, 25, by = 0.01)
+plot(dexp(sec, rate = lambda), yaxt = "n", xaxt = "n", ann = FALSE, col = "green", lwd = 1)
+par(new = T)
+hist(a)
+```
+
+We could easily say that there is some kind of structure in our data that makes it have this decreasing shape. We can see that it follows the shape of the exponential distribution. Let's compute the sample mean and sample variance and compare them to the population statistics:
+
+```{r}
+df <- rbind(df, c(mean(a), var(a)))
+rownames(df) <- c("Population", "Sample")
+print(df)
+```
+
+As we can see, the sample statistics are similar to the population. We know that as the observations of our sample data increase, the sample statistics should converge to the population ones. This is called the law of large numbers (LLN). We are dealing then, with consistent estimators. 
+
+Let's observe how the sample mean of a exponential distribution simulation slowly converges to the population mean as we thrown in more and more observations:
+
+```{r}
+library(ggplot2)
+n <- 1000 # Observations
+ex_mns <- cumsum(rexp(n, rate = lambda)) / (1 : n) # Cumul. sum of the simulation values by n obs.
+
+g <- ggplot(data.frame(x = 1 : n, y = ex_mns), aes(x = x, y = y))
+g <- g + geom_hline(yintercept = 0) + geom_line(size = 1.5)
+g <- g + labs(x = "Number of observations", y = "Cumulative mean")
+g <- g + ggtitle("Exp. Distr. Cumulative mean convergence")
+g
+```
+
+We can see how little by little, the cumulative mean converges to the population mean we computed earler: 5. 
+
+Next, let's analyze the Central Limit Theorem with the exponential distribution. The CLT tells us that the distribution of means of IID (indepentent and identically distributed) variables approaches the standard normal as sample size increases.
+
+So, in other words, even though we are modelling a random variable that is modelled by the exponential distribution, if we compute the means of many of these variables, this will also be a random variable, but that will look more and more like the standard normal as we increase the number of observations.
+
+Let's see if this is true. 
+
+```{r}
+vec = NULL
+for (i in 1:1000) {
+    a <- rexp(n = 40, rate = lambda)
+    vec[i] <- (mean(a) - (1/lambda))/sqrt((lambda^-2)/40)
+}
+```
+
+This has created a vector of length 1000 containing each one, a sample mean of 40 exponentials minus the population mean, 5, divided by the population standard error. This vector of length 1000, vec, should limit to the standard normal, as the CLT says.
+
+Let's see if it does, drawing the histogram of our vector and comparing it to a standard normal.
+
+```{r}
+sec <- seq(-2.2, 4.1, by = 0.001) #Parameters tweaked to fit the normal distribution to the histogram
+plot(dnorm(sec, mean = 0, sd = 1), yaxt = "n", xaxt = "n", ann = F, col = "red", lwd = 1)
+par(new = T)
+hist(vec)
+```
+
+As we can see, it does, thus showing us the behaviour of the Central Limit Theorem in another escenario such as this one, where we worked with exponential distributions.
